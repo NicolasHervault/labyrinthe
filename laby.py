@@ -21,7 +21,17 @@ map_image = pygame.image.load('map.jpg')
 character_image = pygame.image.load('arthur.png')
 treasure_image = pygame.image.load('treasure.png')
 
-# Redimensionner le personnage pour qu'il s'adapte à la taille des cases
+# Charger l'image des murs
+wall_image = pygame.image.load('mur.jpg')
+# Redimensionner l'image des murs à la taille d'une case
+wall_image = pygame.transform.scale(wall_image, (TILE_SIZE, TILE_SIZE))
+
+# Charger l'image du chemin (herbe)
+grass_image = pygame.image.load('grass.png')
+# Redimensionner l'image du chemin à la taille d'une case
+grass_image = pygame.transform.scale(grass_image, (TILE_SIZE, TILE_SIZE))
+
+# Redimensionner le personnage et le trésor pour qu'ils s'adaptent à la taille des cases
 character_image = pygame.transform.scale(character_image, (TILE_SIZE, TILE_SIZE))
 treasure_image = pygame.transform.scale(treasure_image, (TILE_SIZE, TILE_SIZE))
 
@@ -99,16 +109,19 @@ def move_character_on_map():
     # Retourne True si le personnage a atteint la position cible
     return character_rect.topleft == target_map_pos
 
-# Fonction pour dessiner le labyrinthe avec des murs gris
+# Fonction pour dessiner le labyrinthe avec l'image des murs et du chemin (herbe)
 def draw_maze(offset_x, offset_y):
     for row in range(GRID_ROWS):
         for col in range(GRID_COLS):
             cell = maze[row][col]
             x = offset_x + col * TILE_SIZE
             y = offset_y + row * TILE_SIZE
-            rect = pygame.Rect(x, y, TILE_SIZE, TILE_SIZE)
             if cell == 1:
-                pygame.draw.rect(screen, (128, 128, 128), rect)  # Gris pour les murs
+                # Utiliser l'image des murs
+                screen.blit(wall_image, (x, y))
+            else:
+                # Utiliser l'image du chemin (herbe)
+                screen.blit(grass_image, (x, y))
 
 # Fonction A* pour trouver le chemin le plus court
 def a_star(maze, start, goal):
