@@ -29,9 +29,12 @@ treasure_image = pygame.transform.scale(treasure_image, (TILE_SIZE, TILE_SIZE))
 character_rect = character_image.get_rect()
 
 # Position initiale et cible sur la carte
-start_map_pos = (170, 250)
+start_map_pos = (150, 250)
 target_map_pos = (250, 500)
 character_rect.topleft = start_map_pos
+
+# Liste pour stocker les positions où des points rouges doivent être affichés
+path_trail = []
 
 # Fonction pour générer un labyrinthe avec un chemin garanti
 def generate_maze(rows, cols):
@@ -96,7 +99,7 @@ def move_character_on_map():
     # Retourne True si le personnage a atteint la position cible
     return character_rect.topleft == target_map_pos
 
-# Fonction pour dessiner le labyrinthe
+# Fonction pour dessiner le labyrinthe avec des murs gris
 def draw_maze(offset_x, offset_y):
     for row in range(GRID_ROWS):
         for col in range(GRID_COLS):
@@ -105,7 +108,7 @@ def draw_maze(offset_x, offset_y):
             y = offset_y + row * TILE_SIZE
             rect = pygame.Rect(x, y, TILE_SIZE, TILE_SIZE)
             if cell == 1:
-                pygame.draw.rect(screen, (0, 0, 0), rect)
+                pygame.draw.rect(screen, (128, 128, 128), rect)  # Gris pour les murs
 
 # Fonction A* pour trouver le chemin le plus court
 def a_star(maze, start, goal):
@@ -159,11 +162,18 @@ if path is None:
     pygame.quit()
     sys.exit()
 
-# Déplacer le personnage le long du chemin
+# Déplacer le personnage le long du chemin et laisser des points rouges
 def move_along_path(character_rect, path, offset_x, offset_y):
     if path:
         next_tile = path.pop(0)
+        # Ajouter la position actuelle à la liste des points rouges
+        path_trail.append((offset_x + next_tile[1] * TILE_SIZE + TILE_SIZE // 2, offset_y + next_tile[0] * TILE_SIZE + TILE_SIZE // 2))
         character_rect.topleft = (offset_x + next_tile[1] * TILE_SIZE, offset_y + next_tile[0] * TILE_SIZE)
+
+# Fonction pour dessiner les points rouges sur le chemin parcouru
+def draw_path_trail():
+    for point in path_trail:
+        pygame.draw.circle(screen, (255, 0, 0), point, 5)  # Dessiner un petit cercle rouge
 
 def main():
     global screen
@@ -200,6 +210,7 @@ def main():
             screen.blit(treasure_image, (offset_x + treasure[1] * TILE_SIZE, offset_y + treasure[0] * TILE_SIZE))
             screen.blit(character_image, character_rect)
             move_along_path(character_rect, character_path, offset_x, offset_y)
+            draw_path_trail()  # Dessiner les points rouges laissés sur le chemin
 
         pygame.display.flip()
         clock.tick(10)
