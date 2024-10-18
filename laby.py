@@ -58,6 +58,44 @@ coins_positions = []
 # Initialiser le score
 score = 0
 
+
+
+# Fonction pour afficher un message au centre de l'écran
+def display_message():
+    # Charger une police de style pixel art
+    pixel_font = pygame.font.Font("PressStart2P.ttf", 30)  # Assurez-vous d'avoir la police .ttf dans le répertoire
+
+    # Définir les deux lignes du message
+    line1 = "Arthur a trouvé le trésor!"
+    line2 = "Il peut maintenant payer sa note à la taverne."
+
+    # Générer le texte pour chaque ligne
+    text1 = pixel_font.render(line1, True, (255, 255, 0))  # Texte en jaune pour la première ligne
+    text2 = pixel_font.render(line2, True, (255, 255, 0))  # Texte en jaune pour la deuxième ligne
+
+    # Obtenir les rectangles pour centrer les lignes
+    text1_rect = text1.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 40))  # Première ligne un peu plus haut
+    text2_rect = text2.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 40))  # Deuxième ligne en dessous
+
+    # Définir la taille du cadre (marges autour du texte)
+    padding_x, padding_y = 50, 75
+    rect_width = max(text1_rect.width, text2_rect.width) + padding_x * 2
+    rect_height = text1_rect.height + text2_rect.height + padding_y * 2
+    rect_x = min(text1_rect.x, text2_rect.x) - padding_x
+    rect_y = text1_rect.y - padding_y
+
+    # Dessiner le rectangle avec un fond blanc transparent
+    s = pygame.Surface((rect_width, rect_height), pygame.SRCALPHA)  # Créer une surface transparente
+    s.fill((255, 255, 255, 128))  # Remplir avec du blanc transparent (alpha=128)
+    screen.blit(s, (rect_x, rect_y))  # Dessiner le fond transparent
+
+    # Dessiner le cadre
+    pygame.draw.rect(screen, (0, 0, 0), (rect_x, rect_y, rect_width, rect_height), 5)  # Cadre noir de 5px
+
+    # Afficher les deux lignes de texte par-dessus
+    screen.blit(text1, text1_rect)
+    screen.blit(text2, text2_rect)
+
 # Fonction pour générer un labyrinthe avec un chemin garanti
 def generate_maze(rows, cols):
     maze = [[1 for _ in range(cols)] for _ in range(rows)]
@@ -238,6 +276,11 @@ def draw_score():
     score_text = font.render(f"Score: {score}", True, (255, 255, 0))
     screen.blit(score_text, (10, 10))
 
+# Vérifier si Arthur a trouvé le trésor
+def check_treasure_found(character_rect, offset_x, offset_y):
+    treasure_rect = pygame.Rect(offset_x + treasure[1] * TILE_SIZE, offset_y + treasure[0] * TILE_SIZE, TILE_SIZE, TILE_SIZE)
+    return character_rect.colliderect(treasure_rect)
+
 def main():
     global screen
 
@@ -285,6 +328,12 @@ def main():
             move_along_path(character_rect, character_path, offset_x, offset_y)
             draw_path_trail()  # Dessiner les points rouges laissés sur le chemin
             draw_score()  # Afficher le score
+
+            # Vérifier si Arthur a trouvé le trésor
+            if check_treasure_found(character_rect, offset_x, offset_y):
+                # Afficher le message et les confettis
+                display_message()
+                pygame.display.flip()
 
         pygame.display.flip()
         clock.tick(10)
