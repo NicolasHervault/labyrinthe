@@ -6,15 +6,16 @@ import heapq
 # Initialisation de Pygame
 pygame.init()
 
-# Dimensions de l'écran
-SCREEN_WIDTH, SCREEN_HEIGHT = 800, 600
+# Obtenir la taille de l'écran
+screen_info = pygame.display.Info()
+SCREEN_WIDTH, SCREEN_HEIGHT = screen_info.current_w, screen_info.current_h
 
 # Taille des cases du labyrinthe
-TILE_SIZE = 40
+TILE_SIZE = 40  # Vous pouvez ajuster cette valeur si nécessaire
 
-# Dimensions du labyrinthe
-GRID_ROWS = 15
-GRID_COLS = 20
+# Dimensions du labyrinthe (nombre de cases ajusté pour s'adapter à l'écran)
+GRID_ROWS = SCREEN_HEIGHT // TILE_SIZE
+GRID_COLS = SCREEN_WIDTH // TILE_SIZE
 
 # Charger les sprites
 map_image = pygame.image.load('map.jpg')
@@ -31,6 +32,11 @@ grass_image = pygame.image.load('grass.png')
 # Redimensionner l'image du chemin à la taille d'une case
 grass_image = pygame.transform.scale(grass_image, (TILE_SIZE, TILE_SIZE))
 
+# Charger l'image de la pièce
+coin_image = pygame.image.load('coin.png')
+# Redimensionner l'image de la pièce à la taille d'une case
+coin_image = pygame.transform.scale(coin_image, (TILE_SIZE, TILE_SIZE))
+
 # Redimensionner le personnage et le trésor pour qu'ils s'adaptent à la taille des cases
 character_image = pygame.transform.scale(character_image, (TILE_SIZE, TILE_SIZE))
 treasure_image = pygame.transform.scale(treasure_image, (TILE_SIZE, TILE_SIZE))
@@ -45,6 +51,12 @@ character_rect.topleft = start_map_pos
 
 # Liste pour stocker les positions où des points rouges doivent être affichés
 path_trail = []
+
+# Liste des positions des pièces
+coins_positions = []
+
+# Initialiser le score
+score = 0
 
 # Fonction pour générer un labyrinthe avec un chemin garanti
 def generate_maze(rows, cols):
@@ -93,6 +105,19 @@ def place_treasure(maze):
             return (x, y)
 
 treasure = place_treasure(maze)
+
+# Fonction pour placer des pièces aléatoirement sur des cases accessibles
+def place_coins(maze, num_coins):
+    positions = []
+    while len(positions) < num_coins:
+        x = random.randint(1, GRID_ROWS - 2)
+        y = random.randint(1, GRID_COLS - 2)
+        if maze[x][y] == 0 and (x, y) not in positions and (x, y) != treasure:
+            positions.append((x, y))
+    return positions
+
+# Générer des pièces
+coins_positions = place_coins(maze, 10)  # Placer 10 pièces aléatoirement
 
 # Fonction pour déplacer le personnage sur la carte
 def move_character_on_map():
@@ -188,9 +213,42 @@ def draw_path_trail():
     for point in path_trail:
         pygame.draw.circle(screen, (255, 0, 0), point, 5)  # Dessiner un petit cercle rouge
 
+# Fonction pour dessiner les pièces
+def draw_coins(offset_x, offset_y):
+    for coin in coins_positions:
+        coin_x = offset_x + coin[1] * TILE_SIZE
+        coin_y = offset_y + coin[0] * TILE_SIZE
+        screen.blit(coin_image, (coin_x, coin_y))
+
+# Fonction pour ramasser les pièces si le personnage passe dessus
+def collect_coins(character_rect, offset_x, offset_y):
+    global coins_positions, score
+    collected = []
+    for coin in coins_positions:
+        coin_rect = pygame.Rect(offset_x + coin[1] * TILE_SIZE, offset_y + coin[0] * TILE_SIZE, TILE_SIZE, TILE_SIZE)
+        if character_rect.colliderect(coin_rect):
+            collected.append(coin)
+            score += 10  # Incrémenter le score pour chaque pièce ramassée
+    # Retirer les pièces ramassées
+    coins_positions = [coin for coin in coins_positions if coin not in collected]
+
+# Fonction pour afficher le score
+def draw_score():
+    font = pygame.font.Font(None, 36)
+    score_text = font.render(f"Score: {score}", True, (255, 255, 0))
+    screen.blit(score_text, (10, 10))
+
 def main():
     global screen
-    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+
+    # Demander à l'utilisateur de choisir entre fenêtré ou plein écran
+    mode = input("Voulez-vous démarrer en mode plein écran ? (o/n) : ")
+
+    if mode.lower() == 'o':
+        screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.FULLSCREEN)
+    else:
+        screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+
     pygame.display.set_caption("Carte et Labyrinthe")
 
     game_state = "map"  # Initialement sur la carte
@@ -222,8 +280,11 @@ def main():
             draw_maze(offset_x, offset_y)
             screen.blit(treasure_image, (offset_x + treasure[1] * TILE_SIZE, offset_y + treasure[0] * TILE_SIZE))
             screen.blit(character_image, character_rect)
+            draw_coins(offset_x, offset_y)  # Dessiner les pièces
+            collect_coins(character_rect, offset_x, offset_y)  # Ramasser les pièces
             move_along_path(character_rect, character_path, offset_x, offset_y)
             draw_path_trail()  # Dessiner les points rouges laissés sur le chemin
+            draw_score()  # Afficher le score
 
         pygame.display.flip()
         clock.tick(10)
